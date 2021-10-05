@@ -1,0 +1,114 @@
+---
+title: "STAT 650 Homework 3"
+author: 'YiChia Wu(UIN: 132006360)'
+output:
+  html_document:
+    df_print: paged
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("foreign")
+library(dplyr) 
+library(knitr)
+library("BiocManager")
+BiocManager::install("Rgraphviz")
+library(Rgraphviz)
+library(bnlearn)
+```
+
+## Problem 1
+a. **What is the change that a bag identified as containing explosives actually does contain explosives?** \
+
++ P(identified as explosive) = P(actually contain & identified as explosive) + P(without contain & identified as explosive)\
+= $\frac{10}{3000000}\cdot0.95 + (1-\frac{10}{3000000}){3000000}\cdot0.005$ \
+= 0.0000031666... + 0.004999... = 0.00500315\
+**Answer:**\
+$\frac{0.0000031666}{0.00500315} = 0.000633$
+
+b. **If we wanted this probability to be at least 0.5. then what should the probability of correctly identifying a bag not containing explosives need to be?** \
+Assume: P(without contain & identified as not explosive) = p \
+Equation will be: \
+$\frac{0.0000031666}{0.0000031666 + (1-10/300000)(1-p)} = 0.5$ \
+1-p = 0.000003166 \
+**Answer:**\
+p = 0.9999968
+
+c. **Is it possible to obtain a probability of 0.5 of correctly identifying a bag as containing explosives by instead increasing the chance of correctly identifying bags containing explosives? Explain your answer.** \
+**Answer: No.**\
+Assume: new probability of correctly identifying bags containing explosives = p \
+$P(identified\ as\ explosive)  = 0.5$ \
+$\frac{10}{3000000}\cdot p + (1-\frac{10}{3000000}){3000000}\cdot0.005 = 0.5$ \
+Only when p = 135000, it may obtain a probability of 0.5.\
+But this is not possible since the max value of p should be 1.
+
+## Problem 2 Bayesian network
+a. DAG \
+```{r}
+dag <-
+  model2network("[M][T][BC|M:T][HA|BC][S|BC][N|BC]")
+graphviz.plot(dag)
+```
+\
+b. What is the probability that a person will develop a blood clot as a result of both medication and trauma, and then have no medical implications? \
+P(BC = T | M=T, T=T, N=T) \
+= $\frac{P(BC=T, M=T, T=T, N=T)}{P(BC=T, M=T, T=T, N=T) + P(BC=F, M=T, T=T, N=T)}$\
+= $\frac{P(M)P(T)P(BC|M,T)P(N|BC)}{P(M)P(T)P(BC|M,T)P(N|BC) + P(M)P(T)P(BC=F|M,T)P(N|BC=F)}$\
+= $\frac{0.2 \cdot 0.05 \cdot 0.95 \cdot 0.25}{0.2 \cdot 0.05 \cdot 0.95 \cdot 0.25 + 0.2 \cdot 0.05 \cdot 0.05 \cdot 0.75)}$\
+= $\frac{0.002375}{0.002375 + 0.000375}$ = 0.86363636...
+
+
+
+
+## Problem 3
+a. **What is the probability that you have the flu, given that it is winter, you have a headache, and you know that you are dehydrated?**\
+P(F=T | H=T, D=T, S=winter)\
+= $\frac{P(F,H,D,S)}{P(H,D,S)}$ \
+= $\frac{P(S)P(F|S)P(D|S)P(H|F,D)}{P(S)P(F|S)P(D|S)P(H|F,D) + P(S)P(F=F|S)P(D|S)P(H|F=F,D)}$ \
+= $\frac{0.5 \cdot0.4\cdot0.1\cdot0.9}{0.5 \cdot0.4\cdot0.1\cdot0.9 + 0.5 \cdot0.6\cdot0.1\cdot0.8}$ = 0.43\
+
+b. **Does knowing you are dehydrated increase or decrease your probability of having the flu? Intuitively, does this make sense?** \
+**Answer: Decrease.** It makes sense since knowing dehydrated may affect the probability of Headache.\
+P(F=T | H=T, S=winter)\
+= = $\frac{P(F,H,S)}{P(H,S)}$ \
+= $\frac{P(S)P(F|S)P(D|S)P(H|F,D) + P(S)P(F|S)P(D=F|S)P(H|F,D=F)}{P(S)P(F|S)P(D|S)P(H|F,D) + P(S)P(F=F|S)P(D|S)P(H|F=F,D) + P(S)P(F|S)P(D=F|S)P(H|F,D=F) + P(S)P(F=F|S)P(D=F|S)P(H|F=F,D=F)}$ \
+= $\frac{0.5 \cdot0.4\cdot0.1\cdot0.9 + 0.5 \cdot0.4\cdot0.9\cdot0.8}{0.5 \cdot0.4\cdot0.1\cdot0.9 + 0.5 \cdot0.6\cdot0.1\cdot0.8 + 0.5 \cdot0.4\cdot0.9\cdot0.8 + 0.5 \cdot0.6\cdot0.9\cdot0.3}$ = 0.61\
+\
+Compare P(F=T | H=T, S=winter) and P(F=T | H=T, D=T, S=winter), \
+It implies that knowing dehydrated or not **decrease** the probability of having the flu. 
+
+## Problem 4
+```{r}
+dag <-
+  model2network("[A][C][F][B|A][D|A:C][E|B:F]")
+graphviz.plot(dag)
+```
+\
+a. Are A and F conditionally independent given B?\
+Since node B won't imply any connection to node F, therefore it won't imply any connection between node A and F.\
+So node A and F are **conditionally independent**.\
+```{r}
+dsep(bn = dag, x = "A", y = "F", 
+     z = "B")
+```
+
+
+b. Are A and F conditionally independent given E? \
+Since node E is one of the evidence node and both arrows lead into E,
+it may provide connection between node A and F.\
+So node A and F are **not conditionally independent**.\
+```{r}
+dsep(bn = dag, x = "A", y = "F", 
+     z = "E")
+```
+
+c. Are A and F unconditionally independent?\
+There will be no connection between A and F, so they would remain the same after 5 process taught in class.\
+Therefore A and F are **independent.** (not conditionally independent)
+```{r}
+dsep(bn = dag, x = "A", y = "F")
+```
